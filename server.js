@@ -9,6 +9,7 @@ const path = require('path');
 const multer = require('multer')
 const sharp = require('sharp')
 const crypto = require('crypto')
+const cloudinary = require('cloudinary').v2;
 
 const { PrismaClient } = require('@prisma/client')
 
@@ -19,7 +20,14 @@ const app = express();
 const prisma = new PrismaClient()
 
 const storage = multer.memoryStorage()
-const upload = multer({ storage: storage })
+const upload = multer({ storage: multer.memoryStorage() });
+
+// Konfigurasi Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET_KEY
+});
 
 const generateFileName = (bytes = 32) => crypto.randomBytes(bytes).toString('hex')
 
@@ -33,48 +41,14 @@ app.use(
     })
   );
 
-app.post('/registerAkun', upload.none(), async (req, res) => {
-  try {
-    const { fullName, name, password } = req.body;
-
-    // Validasi input
-    if (!fullName || !name || !password) {
-      return res.status(400).send({ message: 'Semua data harus diisi!' });
-    }
-
-    // Simpan data ke database
-    const post = await prisma.akun_daikin.create({
-      data: {
-        fullname: fullName, // Primary key
-        name: name,
-        password: password,
-      },
-    });
-
-    res.status(201).send({
-      message: 'Data berhasil dikirim!',
-      dbData: post,
-    });
-  } catch (error) {
-    console.error(error);
-
-    if (error.code === 'P2002') {
-      // Error P2002: Duplikat nilai unik (misalnya, jika `fullName` sudah ada)
-      res.status(409).send({ message: 'Full name sudah digunakan!' });
-    } else {
-      res.status(500).send({ message: 'Terjadi kesalahan pada server.' });
-    }
-  }
-});
-
 app.post('/loginAkun', upload.none(), async (req, res) => {
-  const { fullName, password } = req.body;
+  const { name, gpm_id } = req.body;
 
   try {
     // Cari data akun berdasarkan fullName
     const user = await prisma.akun_daikin.findUnique({
       where: {
-        fullname: fullName,
+        gpm_id: gpm_id,
       },
     });
 
@@ -86,9 +60,9 @@ app.post('/loginAkun', upload.none(), async (req, res) => {
     }
 
     // Periksa apakah password cocok
-    if (user.password !== password) {
+    if (user.name !== name) {
       return res.status(401).send({
-        message: 'Password salah!',
+        message: 'Nama salah!',
       });
     }
 
@@ -96,7 +70,6 @@ app.post('/loginAkun', upload.none(), async (req, res) => {
     res.status(200).send({
       message: 'Login berhasil!',
       user: {
-        fullName: user.fullname,
         name: user.name,
       },
     });
@@ -109,39 +82,79 @@ app.post('/loginAkun', upload.none(), async (req, res) => {
   }
 });
 
-app.post('/api/posts', upload.single('image'), async (req, res) => {
-    let {photo, lat, lng} = req.body;
-
-    // Mengonversi lat dan lng ke tipe number
-    lat = parseFloat(lat);
-    lng = parseFloat(lng);
-
-    // Ambil file dari URI menggunakan fetch
-    const response = await fetch(photo);
-    const blob = await response.blob(); // Mengubah ke blob (binary file)
-
-    const imageName = `image-${Date.now()}.jpg`;
-
-    // Buat buffer dari blob (untuk diunggah ke S3)
-    const arrayBuffer = await blob.arrayBuffer();
-    const fileBuffer = Buffer.from(arrayBuffer);
-
-    const s3_post = await uploadFile(fileBuffer, imageName, blob.type)
-
-    const post = await prisma.absen_daikin.create({
-      data: {
-        photo: imageName,
-        lat: lat,
-        lng: lng
+const uploadToCloudinary = (fileBuffer, imageName) => {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      { public_id: imageName, format: 'jpg' }, // Opsi Cloudinary
+      (error, result) => {
+        if (error) {
+          return reject(error); // Jika error, reject Promise
+        }
+        resolve(result); // Jika berhasil, resolve Promise dengan hasil upload
       }
-    })
+    );
+    uploadStream.end(fileBuffer); // Kirimkan buffer file ke stream
+  });
+};
+
+
+app.post('/api/posts', upload.single('image'), async (req, res) => {
+  try {
+    const { gpm_id, latitude, longitude } = req.body;
+    console.log('Checkpoint 1');
+    const file = req.file;
+    console.log('File diterima:', file);
+    if (!file) {
+      return res.status(400).send({ message: 'File tidak ditemukan!' });
+    }
+
+    // Mendapatkan waktu dalam format biasa
+    const now = new Date();
+    const formattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`; // Format: YYYY-MM-DD
+    const formattedTime = `${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}-${String(now.getSeconds()).padStart(2, '0')}`; // Format: HH-MM-SS
+
+    // Membuat imageName menggunakan gpm_id dan waktu
+    const imageName = `${gpm_id}-${formattedDate}-${formattedTime}`;
+
+  /*  const result = await cloudinary.uploader.upload(file.buffer, {
+      public_id: imageName, // Nama file yang diinginkan
+      format: 'jpg'             // Konversi ke JPG
+    }); */
+
+    // Unggah ke Cloudinary
+    const result = await uploadToCloudinary(req.file.buffer, imageName);
+
+    const photo_url = result.secure_url;
+    console.log('URL photo: ', photo_url);
+
+    // Simpan informasi ke database absen
+    const post_absen = await prisma.absen_daikin.create({
+      data: {
+        gpm_id: gpm_id,
+        photo: photo_url,
+      },
+    });
+
+    // Simpan informasi ke database absen
+    const post_lokasi = await prisma.lokasi_daikin.create({
+      data: {
+        gpm_id: gpm_id,
+        latitude: parseFloat(latitude),
+        longitude: parseFloat(longitude),
+      },
+    });
 
     res.status(201).send({
       message: 'Data berhasil dikirim!',
-      s3Data: s3_post,  // Data dari S3
-      dbData: post,     // Data yang disimpan di database
+      cloudinaryData: result, // Data dari S3
+      dbAbsen: post_absen,    // Data yang disimpan di database absen
+      dbLokasi: post_lokasi,    // Data yang disimpan di database lokasi
     });
-})
+  } catch (error) {
+    console.error('Error pada server:', error);
+    res.status(500).send({ message: 'Terjadi kesalahan pada server.' });
+  }
+});
 
 
 
