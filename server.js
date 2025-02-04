@@ -241,8 +241,8 @@ app.get('/getWaktu', async (req, res) => {
       where: {
         gpm_id: gpm_id,
         clock_in: {
-          gte: startOfDayUTC, // Mulai dari jam 00:00 hari ini
-          lt: endOfDayUTC, // Kurang dari jam 00:00 hari berikutnya
+          gte: startOfDayJakarta, // Mulai dari jam 00:00 hari ini
+          lt: endOfDayJakarta, // Kurang dari jam 00:00 hari berikutnya
         },
       },
       select: {
