@@ -8,21 +8,22 @@ datasource db {
 }
 
 model absen_daikin {
-  id     Int      @id @default(autoincrement())
-  gpm_id String
-  date   DateTime @default(now()) @db.Timestamp(6)
-  photo  String
+  id        Int       @id @default(autoincrement())
+  gpm_id    String
+  clock_in  DateTime  @db.Timestamp(6)
+  photo     String
+  clock_out DateTime? @db.Timestamp(6)
 }
 
 model akun_daikin {
-  gpm_id String @id
-  name   String
+  gpm_id   String @id
+  password String
 }
 
 model lokasi_daikin {
   id        Int      @id @default(autoincrement())
   gpm_id    String
-  date      DateTime @default(now()) @db.Timestamp(6)
+  date      DateTime @db.Timestamp(6)
   latitude  Decimal  @db.Decimal
   longitude Decimal  @db.Decimal
 }
