@@ -177,17 +177,13 @@ app.post('/clock_out', async (req, res) => {
     const startOfDayJakarta = new Date(`${todayString}T00:00:00.000+07:00`);
     const endOfDayJakarta = new Date(`${todayString}T23:59:59.999+07:00`);
 
-    // Konversi ke UTC untuk query database
-    const startOfDayUTC = new Date(startOfDayJakarta.getTime() - jakartaOffset);
-    const endOfDayUTC = new Date(endOfDayJakarta.getTime() - jakartaOffset);
-
     // Cari entri clock_in untuk gpm_id yang sudah ada di hari ini
     const absen = await prisma.absen_daikin.findFirst({
       where: {
         gpm_id: gpm_id,
         clock_in: {
-          gte: startOfDayUTC, // Awal hari ini
-          lt: endOfDayUTC,  // Akhir hari ini
+          gte: startOfDayJakarta, // Awal hari ini
+          lt: endOfDayJakarta,  // Akhir hari ini
         },
         clock_out: null, // Pastikan clock_out belum terisi
       },
@@ -231,10 +227,6 @@ app.get('/getWaktu', async (req, res) => {
     // Hitung awal dan akhir hari sesuai dengan zona waktu Jakarta
     const startOfDayJakarta = new Date(`${todayString}T00:00:00.000+07:00`);
     const endOfDayJakarta = new Date(`${todayString}T23:59:59.999+07:00`);
-
-    // Konversi ke UTC untuk query database
-    const startOfDayUTC = new Date(startOfDayJakarta.getTime() - jakartaOffset);
-    const endOfDayUTC = new Date(endOfDayJakarta.getTime() - jakartaOffset);
 
     // Cari entri absen berdasarkan gpm_id dan tanggal hari ini
     const absen = await prisma.absen_daikin.findFirst({
