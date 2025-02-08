@@ -138,8 +138,8 @@ app.post('/clock_in', upload.single('image'), async (req, res) => {
 
     // Jika belum ada clock_in, lanjutkan penyimpanan data
 
-    const formattedDate = `${nowJakarta.getFullYear()}-${String(nowJakarta.getMonth() + 1).padStart(2, '0')}-${String(nowJakarta.getDate()).padStart(2, '0')}`;
-    const formattedTime = `${String(nowJakarta.getHours()).padStart(2, '0')}-${String(nowJakarta.getMinutes()).padStart(2, '0')}-${String(nowJakarta.getSeconds()).padStart(2, '0')}`;
+    const formattedDate = `${nowJakarta.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const formattedTime = `${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}-${String(now.getSeconds()).padStart(2, '0')}`;
 
     // Membuat imageName menggunakan gpm_id dan waktu
     const imageName = `${gpm_id}-${formattedDate}-${formattedTime}`;
@@ -221,8 +221,8 @@ app.post('/clock_out', upload.single('image'), async (req, res) => {
 
     // Jika belum ada clock_in, lanjutkan penyimpanan data
 
-    const formattedDate = `${nowJakarta.getFullYear()}-${String(nowJakarta.getMonth() + 1).padStart(2, '0')}-${String(nowJakarta.getDate()).padStart(2, '0')}`;
-    const formattedTime = `${String(nowJakarta.getHours()).padStart(2, '0')}-${String(nowJakarta.getMinutes()).padStart(2, '0')}-${String(nowJakarta.getSeconds()).padStart(2, '0')}`;
+    const formattedDate = `${nowJakarta.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const formattedTime = `${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}-${String(now.getSeconds()).padStart(2, '0')}`;
 
     // Membuat imageName menggunakan gpm_id dan waktu
     const imageName = `${gpm_id}-${formattedDate}-${formattedTime}`;
@@ -303,8 +303,8 @@ app.post('/luar_kota', upload.single('image'), async (req, res) => {
 
     // Jika belum ada clock_in, lanjutkan penyimpanan data
 
-    const formattedDate = `${nowJakarta.getFullYear()}-${String(nowJakarta.getMonth() + 1).padStart(2, '0')}-${String(nowJakarta.getDate()).padStart(2, '0')}`;
-    const formattedTime = `${String(nowJakarta.getHours()).padStart(2, '0')}-${String(nowJakarta.getMinutes()).padStart(2, '0')}-${String(nowJakarta.getSeconds()).padStart(2, '0')}`;
+    const formattedDate = `${nowJakarta.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const formattedTime = `${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}-${String(now.getSeconds()).padStart(2, '0')}`;
 
     // Membuat imageName menggunakan gpm_id dan waktu
     const imageName = `${gpm_id}-${formattedDate}-${formattedTime}`;
