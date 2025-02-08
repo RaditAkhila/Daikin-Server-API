@@ -100,27 +100,49 @@ const uploadToCloudinary = (fileBuffer, imageName) => {
 };
 
 
-app.post('/api/posts', upload.single('image'), async (req, res) => {
+app.post('/clock_in', upload.single('image'), async (req, res) => {
   try {
     const { gpm_id, latitude, longitude } = req.body;
     console.log('Checkpoint 1');
     const file = req.file;
     console.log('File diterima:', file);
+
     if (!file) {
       return res.status(400).send({ message: 'File tidak ditemukan!' });
     }
 
     const now = new Date();
-    const formattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`; // Format: YYYY-MM-DD
-    const formattedTime = `${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}-${String(now.getSeconds()).padStart(2, '0')}`; // Format: HH-MM-SS
+    const jakartaOffset = 7 * 60 * 60 * 1000; // 7 jam dalam milidetik
+    const nowJakarta = new Date(now.getTime() + jakartaOffset);
+
+    const todayString = nowJakarta.toISOString().split('T')[0]; // Format YYYY-MM-DD
+
+    // Hitung awal dan akhir hari sesuai zona Jakarta
+    const startOfDayJakarta = new Date(`${todayString}T00:00:00.000+07:00`);
+    const endOfDayJakarta = new Date(`${todayString}T23:59:59.999+07:00`);
+
+    // Cek apakah sudah ada clock_in hari ini
+    const existingAbsen = await prisma.absen_daikin.findFirst({
+      where: {
+        gpm_id: gpm_id,
+        clock_in: {
+          gte: startOfDayJakarta, // Dari awal hari ini dalam UTC
+          lt: endOfDayJakarta,    // Hingga akhir hari ini dalam UTC
+        },
+      },
+    });
+
+    if (existingAbsen) {
+      return res.status(400).send({ message: 'Anda sudah melakukan absen hari ini!' });
+    }
+
+    // Jika belum ada clock_in, lanjutkan penyimpanan data
+
+    const formattedDate = `${nowJakarta.getFullYear()}-${String(nowJakarta.getMonth() + 1).padStart(2, '0')}-${String(nowJakarta.getDate()).padStart(2, '0')}`;
+    const formattedTime = `${String(nowJakarta.getHours()).padStart(2, '0')}-${String(nowJakarta.getMinutes()).padStart(2, '0')}-${String(nowJakarta.getSeconds()).padStart(2, '0')}`;
 
     // Membuat imageName menggunakan gpm_id dan waktu
     const imageName = `${gpm_id}-${formattedDate}-${formattedTime}`;
-
-  /*  const result = await cloudinary.uploader.upload(file.buffer, {
-      public_id: imageName, // Nama file yang diinginkan
-      format: 'jpg'             // Konversi ke JPG
-    }); */
 
     // Unggah ke Cloudinary
     const result = await uploadToCloudinary(req.file.buffer, imageName);
@@ -132,16 +154,16 @@ app.post('/api/posts', upload.single('image'), async (req, res) => {
     const post_absen = await prisma.absen_daikin.create({
       data: {
         gpm_id: gpm_id,
-        photo: photo_url,
-        clock_in: now,
+        photo_in: photo_url,
+        clock_in: now, // Waktu dalam UTC
       },
     });
 
-    // Simpan informasi ke database absen
-    const post_lokasi = await prisma.lokasi_daikin.create({
+    // Simpan informasi ke database lokasi
+    const post_lokasi = await prisma.lokasi_clock_in.create({
       data: {
         gpm_id: gpm_id,
-        date: now,
+        date: now, // Waktu dalam UTC
         latitude: parseFloat(latitude),
         longitude: parseFloat(longitude),
       },
@@ -149,16 +171,183 @@ app.post('/api/posts', upload.single('image'), async (req, res) => {
 
     res.status(201).send({
       message: 'Data berhasil dikirim!',
-      cloudinaryData: result, // Data dari S3
+      cloudinaryData: result, // Data dari Cloudinary
       dbAbsen: post_absen,    // Data yang disimpan di database absen
-      dbLokasi: post_lokasi,    // Data yang disimpan di database lokasi
+      dbLokasi: post_lokasi,  // Data yang disimpan di database lokasi
     });
+
   } catch (error) {
     console.error('Error pada server:', error);
     res.status(500).send({ message: 'Terjadi kesalahan pada server.' });
   }
 });
 
+app.post('/clock_out', upload.single('image'), async (req, res) => {
+  try {
+    const { gpm_id, latitude, longitude } = req.body;
+    console.log('Checkpoint 1');
+    const file = req.file;
+    console.log('File diterima:', file);
+
+    if (!file) {
+      return res.status(400).send({ message: 'File tidak ditemukan!' });
+    }
+
+    const now = new Date();
+    const jakartaOffset = 7 * 60 * 60 * 1000; // 7 jam dalam milidetik
+
+    const nowJakarta = new Date(now.getTime() + jakartaOffset);
+    const todayString = nowJakarta.toISOString().split('T')[0]; // YYYY-MM-DD untuk zona waktu lokal
+
+    // Hitung awal dan akhir hari sesuai dengan zona waktu Jakarta
+    const startOfDayJakarta = new Date(`${todayString}T00:00:00.000+07:00`);
+    const endOfDayJakarta = new Date(`${todayString}T23:59:59.999+07:00`);
+
+    // Cari entri clock_in untuk gpm_id yang sudah ada di hari ini
+    const absen = await prisma.absen_daikin.findFirst({
+      where: {
+        gpm_id: gpm_id,
+        clock_in: {
+          gte: startOfDayJakarta, // Awal hari ini
+          lt: endOfDayJakarta,  // Akhir hari ini
+        },
+        clock_out: null, // Pastikan clock_out belum terisi
+      },
+    });
+
+    if (!absen) {
+      return res.status(400).send({ message: 'Clock-in belum dilakukan atau sudah clock-out!' });
+    }
+
+    // Jika belum ada clock_in, lanjutkan penyimpanan data
+
+    const formattedDate = `${nowJakarta.getFullYear()}-${String(nowJakarta.getMonth() + 1).padStart(2, '0')}-${String(nowJakarta.getDate()).padStart(2, '0')}`;
+    const formattedTime = `${String(nowJakarta.getHours()).padStart(2, '0')}-${String(nowJakarta.getMinutes()).padStart(2, '0')}-${String(nowJakarta.getSeconds()).padStart(2, '0')}`;
+
+    // Membuat imageName menggunakan gpm_id dan waktu
+    const imageName = `${gpm_id}-${formattedDate}-${formattedTime}`;
+
+    // Unggah ke Cloudinary
+    const result = await uploadToCloudinary(req.file.buffer, imageName);
+
+    const photo_url = result.secure_url;
+    console.log('URL photo: ', photo_url);
+
+    // Update clock_out dengan timestamp saat ini
+    const updatedAbsen = await prisma.absen_daikin.update({
+      where: { id: absen.id },
+      data: {
+        clock_out: now,
+        photo_out: photo_url
+      },
+    });
+
+    // Simpan informasi ke database lokasi
+    const post_lokasi = await prisma.lokasi_clock_out.create({
+      data: {
+        gpm_id: gpm_id,
+        date: now, // Waktu dalam UTC
+        latitude: parseFloat(latitude),
+        longitude: parseFloat(longitude),
+      },
+    });
+
+    res.status(201).send({
+      message: 'Data berhasil dikirim!',
+      cloudinaryData: result, // Data dari Cloudinary
+      dbAbsen: updatedAbsen,    // Data yang disimpan di database absen
+      dbLokasi: post_lokasi,  // Data yang disimpan di database lokasi
+    });
+
+  } catch (error) {
+    console.error('Error pada server:', error);
+    res.status(500).send({ message: 'Terjadi kesalahan pada server.' });
+  }
+});
+
+app.post('/luar_kota', upload.single('image'), async (req, res) => {
+  try {
+    const { gpm_id, latitude, longitude } = req.body;
+    console.log('Checkpoint 1');
+    const file = req.file;
+    console.log('File diterima:', file);
+
+    if (!file) {
+      return res.status(400).send({ message: 'File tidak ditemukan!' });
+    }
+
+    const now = new Date();
+    const jakartaOffset = 7 * 60 * 60 * 1000; // 7 jam dalam milidetik
+    const nowJakarta = new Date(now.getTime() + jakartaOffset);
+
+    const todayString = nowJakarta.toISOString().split('T')[0]; // Format YYYY-MM-DD
+
+    // Hitung awal dan akhir hari sesuai zona Jakarta
+    const startOfDayJakarta = new Date(`${todayString}T00:00:00.000+07:00`);
+    const endOfDayJakarta = new Date(`${todayString}T23:59:59.999+07:00`);
+
+    // Cek apakah sudah ada clock_in hari ini
+    const existingAbsen = await prisma.absen_daikin.findFirst({
+      where: {
+        gpm_id: gpm_id,
+        clock_in: {
+          gte: startOfDayJakarta, // Dari awal hari ini dalam UTC
+          lt: endOfDayJakarta,    // Hingga akhir hari ini dalam UTC
+        },
+      },
+    });
+
+    if (existingAbsen) {
+      return res.status(400).send({ message: 'Anda sudah melakukan absen hari ini!' });
+    }
+
+    // Jika belum ada clock_in, lanjutkan penyimpanan data
+
+    const formattedDate = `${nowJakarta.getFullYear()}-${String(nowJakarta.getMonth() + 1).padStart(2, '0')}-${String(nowJakarta.getDate()).padStart(2, '0')}`;
+    const formattedTime = `${String(nowJakarta.getHours()).padStart(2, '0')}-${String(nowJakarta.getMinutes()).padStart(2, '0')}-${String(nowJakarta.getSeconds()).padStart(2, '0')}`;
+
+    // Membuat imageName menggunakan gpm_id dan waktu
+    const imageName = `${gpm_id}-${formattedDate}-${formattedTime}`;
+
+    // Unggah ke Cloudinary
+    const result = await uploadToCloudinary(req.file.buffer, imageName);
+
+    const photo_url = result.secure_url;
+    console.log('URL photo: ', photo_url);
+
+    // Simpan informasi ke database absen
+    const post_absen = await prisma.absen_daikin.create({
+      data: {
+        gpm_id: gpm_id,
+        photo_in: photo_url,
+        clock_in: now, // Waktu dalam UTC
+        clock_out: now,
+      },
+    });
+
+    // Simpan informasi ke database lokasi
+    const post_lokasi = await prisma.lokasi_luar_kota.create({
+      data: {
+        gpm_id: gpm_id,
+        date: now, // Waktu dalam UTC
+        latitude: parseFloat(latitude),
+        longitude: parseFloat(longitude),
+      },
+    });
+
+    res.status(201).send({
+      message: 'Data berhasil dikirim!',
+      cloudinaryData: result, // Data dari Cloudinary
+      dbAbsen: post_absen,    // Data yang disimpan di database absen
+      dbLokasi: post_lokasi,  // Data yang disimpan di database lokasi
+    });
+
+  } catch (error) {
+    console.error('Error pada server:', error);
+    res.status(500).send({ message: 'Terjadi kesalahan pada server.' });
+  }
+});
+/*
 app.post('/clock_out', async (req, res) => {
   try {
     const { gpm_id } = req.body;
@@ -177,17 +366,13 @@ app.post('/clock_out', async (req, res) => {
     const startOfDayJakarta = new Date(`${todayString}T00:00:00.000+07:00`);
     const endOfDayJakarta = new Date(`${todayString}T23:59:59.999+07:00`);
 
-    // Konversi ke UTC untuk query database
-    const startOfDayUTC = new Date(startOfDayJakarta.getTime() - jakartaOffset);
-    const endOfDayUTC = new Date(endOfDayJakarta.getTime() - jakartaOffset);
-
     // Cari entri clock_in untuk gpm_id yang sudah ada di hari ini
     const absen = await prisma.absen_daikin.findFirst({
       where: {
         gpm_id: gpm_id,
         clock_in: {
-          gte: startOfDayUTC, // Awal hari ini
-          lt: endOfDayUTC,  // Akhir hari ini
+          gte: startOfDayJakarta, // Awal hari ini
+          lt: endOfDayJakarta,  // Akhir hari ini
         },
         clock_out: null, // Pastikan clock_out belum terisi
       },
@@ -213,7 +398,7 @@ app.post('/clock_out', async (req, res) => {
     res.status(500).send({ message: 'Terjadi kesalahan pada server.' });
   }
 });
-
+*/
 app.get('/getWaktu', async (req, res) => {
   try {
     const { gpm_id } = req.query;
@@ -232,17 +417,13 @@ app.get('/getWaktu', async (req, res) => {
     const startOfDayJakarta = new Date(`${todayString}T00:00:00.000+07:00`);
     const endOfDayJakarta = new Date(`${todayString}T23:59:59.999+07:00`);
 
-    // Konversi ke UTC untuk query database
-    const startOfDayUTC = new Date(startOfDayJakarta.getTime() - jakartaOffset);
-    const endOfDayUTC = new Date(endOfDayJakarta.getTime() - jakartaOffset);
-
     // Cari entri absen berdasarkan gpm_id dan tanggal hari ini
     const absen = await prisma.absen_daikin.findFirst({
       where: {
         gpm_id: gpm_id,
         clock_in: {
-          gte: startOfDayUTC, // Mulai dari jam 00:00 hari ini
-          lt: endOfDayUTC, // Kurang dari jam 00:00 hari berikutnya
+          gte: startOfDayJakarta, // Mulai dari jam 00:00 hari ini
+          lt: endOfDayJakarta, // Kurang dari jam 00:00 hari berikutnya
         },
       },
       select: {

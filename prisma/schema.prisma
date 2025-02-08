@@ -11,8 +11,9 @@ model absen_daikin {
   id        Int       @id @default(autoincrement())
   gpm_id    String
   clock_in  DateTime  @db.Timestamp(6)
-  photo     String
+  photo_in  String
   clock_out DateTime? @db.Timestamp(6)
+  photo_out String?
 }
 
 model akun_daikin {
@@ -20,7 +21,23 @@ model akun_daikin {
   password String
 }
 
-model lokasi_daikin {
+model lokasi_clock_in {
+  id        Int      @id(map: "lokasi_daikin_pkey") @default(autoincrement())
+  gpm_id    String
+  date      DateTime @db.Timestamp(6)
+  latitude  Decimal  @db.Decimal
+  longitude Decimal  @db.Decimal
+}
+
+model lokasi_clock_out {
+  id        Int      @id @default(autoincrement())
+  gpm_id    String
+  date      DateTime @db.Timestamp(6)
+  latitude  Decimal  @db.Decimal
+  longitude Decimal  @db.Decimal
+}
+
+model lokasi_luar_kota {
   id        Int      @id @default(autoincrement())
   gpm_id    String
   date      DateTime @db.Timestamp(6)
