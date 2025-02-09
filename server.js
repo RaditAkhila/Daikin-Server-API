@@ -110,6 +110,9 @@ app.post('/clock_in', upload.single('image'), async (req, res) => {
     if (!file) {
       return res.status(400).send({ message: 'File tidak ditemukan!' });
     }
+    if (!gpm_id && !latitude && !longitude) {
+      return res.status(400).send({ message: 'Data tidak lengkap!' });
+    }
 
     const now = new Date();
     const jakartaOffset = 7 * 60 * 60 * 1000; // 7 jam dalam milidetik
@@ -191,6 +194,9 @@ app.post('/clock_out', upload.single('image'), async (req, res) => {
 
     if (!file) {
       return res.status(400).send({ message: 'File tidak ditemukan!' });
+    }
+    if (!gpm_id && !latitude && !longitude) {
+      return res.status(400).send({ message: 'Data tidak lengkap!' });
     }
 
     const now = new Date();
@@ -274,6 +280,9 @@ app.post('/luar_kota', upload.single('image'), async (req, res) => {
 
     if (!file) {
       return res.status(400).send({ message: 'File tidak ditemukan!' });
+    }
+    if (!gpm_id && !latitude && !longitude) {
+      return res.status(400).send({ message: 'Data tidak lengkap!' });
     }
 
     const now = new Date();
