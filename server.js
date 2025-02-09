@@ -103,12 +103,18 @@ const uploadToCloudinary = (fileBuffer, imageName) => {
 app.post('/clock_in', upload.single('image'), async (req, res) => {
   try {
     const { gpm_id, latitude, longitude } = req.body;
-    console.log('Checkpoint 1');
+    console.log('Latitude diterima:', latitude);
     const file = req.file;
     console.log('File diterima:', file);
 
-    if (!file || !gpm_id || !latitude || !longitude) {
-      return res.status(400).send({ message: 'File dan data tidak ditemukan!' });
+    if (!file) {
+      return res.status(400).send({ message: 'File tidak ditemukan!' });
+    }
+    // Periksa apakah semua data yang dibutuhkan ada dan valid
+    if (!gpm_id || !latitude || !longitude || latitude.trim() === "" || longitude.trim() === "") {
+      return res.status(400).send({
+        message: 'Data tidak lengkap! Pastikan gpm_id, latitude, dan longitude dikirim dengan benar.'
+      });
     }
 
     const now = new Date();
@@ -185,12 +191,18 @@ app.post('/clock_in', upload.single('image'), async (req, res) => {
 app.post('/clock_out', upload.single('image'), async (req, res) => {
   try {
     const { gpm_id, latitude, longitude } = req.body;
-    console.log('Checkpoint 1');
+    console.log('Latitude diterima:', latitude);
     const file = req.file;
     console.log('File diterima:', file);
 
-    if (!file || !gpm_id || !latitude || !longitude) {
+    if (!file) {
       return res.status(400).send({ message: 'File tidak ditemukan!' });
+    }
+    // Periksa apakah semua data yang dibutuhkan ada dan valid
+    if (!gpm_id || !latitude || !longitude || latitude.trim() === "" || longitude.trim() === "") {
+      return res.status(400).send({
+        message: 'Data tidak lengkap! Pastikan gpm_id, latitude, dan longitude dikirim dengan benar.'
+      });
     }
 
     const now = new Date();
@@ -268,12 +280,18 @@ app.post('/clock_out', upload.single('image'), async (req, res) => {
 app.post('/luar_kota', upload.single('image'), async (req, res) => {
   try {
     const { gpm_id, latitude, longitude } = req.body;
-    console.log('Checkpoint 1');
+    console.log('Latitude diterima:', latitude);
     const file = req.file;
     console.log('File diterima:', file);
 
-    if (!file || !gpm_id || !latitude || !longitude) {
+    if (!file) {
       return res.status(400).send({ message: 'File tidak ditemukan!' });
+    }
+    // Periksa apakah semua data yang dibutuhkan ada dan valid
+    if (!gpm_id || !latitude || !longitude || latitude.trim() === "" || longitude.trim() === "") {
+      return res.status(400).send({
+        message: 'Data tidak lengkap! Pastikan gpm_id, latitude, dan longitude dikirim dengan benar.'
+      });
     }
 
     const now = new Date();
