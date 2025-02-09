@@ -201,7 +201,13 @@ app.post('/clock_out', upload.single('image'), async (req, res) => {
     if (!file) {
       return res.status(400).send({ message: 'File tidak ditemukan!' });
     }
-    if (!gpm_id || !latitude || !longitude) {
+    if (!gpm_id) {
+      return res.status(400).send({ message: 'Data tidak lengkap!' });
+    }
+    if (!latitude) {
+      return res.status(400).send({ message: 'Data tidak lengkap!' });
+    }
+    if (!longitude) {
       return res.status(400).send({ message: 'Data tidak lengkap!' });
     }
 
@@ -287,7 +293,13 @@ app.post('/luar_kota', upload.single('image'), async (req, res) => {
     if (!file) {
       return res.status(400).send({ message: 'File tidak ditemukan!' });
     }
-    if (!gpm_id || !latitude || !longitude) {
+    if (!gpm_id) {
+      return res.status(400).send({ message: 'Data tidak lengkap!' });
+    }
+    if (!latitude) {
+      return res.status(400).send({ message: 'Data tidak lengkap!' });
+    }
+    if (!longitude) {
       return res.status(400).send({ message: 'Data tidak lengkap!' });
     }
 
