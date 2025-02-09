@@ -107,17 +107,8 @@ app.post('/clock_in', upload.single('image'), async (req, res) => {
     const file = req.file;
     console.log('File diterima:', file);
 
-    if (!file) {
-      return res.status(400).send({ message: 'File tidak ditemukan!' });
-    }
-    if (!gpm_id) {
-      return res.status(400).send({ message: 'Data tidak lengkap!' });
-    }
-    if (!latitude) {
-      return res.status(400).send({ message: 'Data tidak lengkap!' });
-    }
-    if (!longitude) {
-      return res.status(400).send({ message: 'Data tidak lengkap!' });
+    if (!file || !gpm_id || !latitude || !longitude) {
+      return res.status(400).send({ message: 'File dan data tidak ditemukan!' });
     }
 
     const now = new Date();
@@ -198,17 +189,8 @@ app.post('/clock_out', upload.single('image'), async (req, res) => {
     const file = req.file;
     console.log('File diterima:', file);
 
-    if (!file) {
+    if (!file || !gpm_id || !latitude || !longitude) {
       return res.status(400).send({ message: 'File tidak ditemukan!' });
-    }
-    if (!gpm_id) {
-      return res.status(400).send({ message: 'Data tidak lengkap!' });
-    }
-    if (!latitude) {
-      return res.status(400).send({ message: 'Data tidak lengkap!' });
-    }
-    if (!longitude) {
-      return res.status(400).send({ message: 'Data tidak lengkap!' });
     }
 
     const now = new Date();
@@ -290,17 +272,8 @@ app.post('/luar_kota', upload.single('image'), async (req, res) => {
     const file = req.file;
     console.log('File diterima:', file);
 
-    if (!file) {
+    if (!file || !gpm_id || !latitude || !longitude) {
       return res.status(400).send({ message: 'File tidak ditemukan!' });
-    }
-    if (!gpm_id) {
-      return res.status(400).send({ message: 'Data tidak lengkap!' });
-    }
-    if (!latitude) {
-      return res.status(400).send({ message: 'Data tidak lengkap!' });
-    }
-    if (!longitude) {
-      return res.status(400).send({ message: 'Data tidak lengkap!' });
     }
 
     const now = new Date();
