@@ -27,6 +27,8 @@ model lokasi_clock_in {
   date      DateTime @db.Timestamp(6)
   latitude  Decimal  @db.Decimal
   longitude Decimal  @db.Decimal
+  alamat    String
+  url_map   String
 }
 
 model lokasi_clock_out {
@@ -35,6 +37,8 @@ model lokasi_clock_out {
   date      DateTime @db.Timestamp(6)
   latitude  Decimal  @db.Decimal
   longitude Decimal  @db.Decimal
+  alamat    String
+  url_map   String
 }
 
 model lokasi_luar_kota {
@@ -43,4 +47,6 @@ model lokasi_luar_kota {
   date      DateTime @db.Timestamp(6)
   latitude  Decimal  @db.Decimal
   longitude Decimal  @db.Decimal
+  alamat    String
+  url_map   String
 }

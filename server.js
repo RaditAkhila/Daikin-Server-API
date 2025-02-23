@@ -102,7 +102,7 @@ const uploadToCloudinary = (fileBuffer, imageName) => {
 
 app.post('/clock_in', upload.single('image'), async (req, res) => {
   try {
-    const { gpm_id, latitude, longitude } = req.body;
+    const { gpm_id, latitude, longitude, alamat } = req.body;
     console.log('Latitude diterima:', latitude);
     const file = req.file;
     console.log('File diterima:', file);
@@ -110,7 +110,7 @@ app.post('/clock_in', upload.single('image'), async (req, res) => {
     if (!file) {
       return res.status(400).send({ message: 'File tidak ditemukan!' });
     }
-    // Periksa apakah semua data yang dibutuhkan ada dan valid
+    // Periksa apakah semua data yang dibutuhkan ada dan valid , validasi ini blm berhasil sehingga diganti validasi data pada sisi client
     if (!gpm_id || !latitude || !longitude || latitude.trim() === "" || longitude.trim() === "") {
       return res.status(400).send({
         message: 'Data tidak lengkap! Pastikan gpm_id, latitude, dan longitude dikirim dengan benar.'
@@ -165,6 +165,8 @@ app.post('/clock_in', upload.single('image'), async (req, res) => {
       },
     });
 
+    const url_map = "https://www.openstreetmap.org/?mlat=" + latitude + "&mlon=" + longitude + "&zoom=20"; // URL dengan koordinat sesuai parameter
+
     // Simpan informasi ke database lokasi
     const post_lokasi = await prisma.lokasi_clock_in.create({
       data: {
@@ -172,6 +174,8 @@ app.post('/clock_in', upload.single('image'), async (req, res) => {
         date: now, // Waktu dalam UTC
         latitude: parseFloat(latitude),
         longitude: parseFloat(longitude),
+        alamat: alamat,
+        url_map: url_map, // URL dengan koordinat sesuai parameter
       },
     });
 
@@ -190,7 +194,7 @@ app.post('/clock_in', upload.single('image'), async (req, res) => {
 
 app.post('/clock_out', upload.single('image'), async (req, res) => {
   try {
-    const { gpm_id, latitude, longitude } = req.body;
+    const { gpm_id, latitude, longitude, alamat } = req.body;
     console.log('Latitude diterima:', latitude);
     const file = req.file;
     console.log('File diterima:', file);
@@ -198,7 +202,7 @@ app.post('/clock_out', upload.single('image'), async (req, res) => {
     if (!file) {
       return res.status(400).send({ message: 'File tidak ditemukan!' });
     }
-    // Periksa apakah semua data yang dibutuhkan ada dan valid
+    // Periksa apakah semua data yang dibutuhkan ada dan valid , validasi ini blm berhasil sehingga diganti validasi data pada sisi client
     if (!gpm_id || !latitude || !longitude || latitude.trim() === "" || longitude.trim() === "") {
       return res.status(400).send({
         message: 'Data tidak lengkap! Pastikan gpm_id, latitude, dan longitude dikirim dengan benar.'
@@ -254,6 +258,8 @@ app.post('/clock_out', upload.single('image'), async (req, res) => {
       },
     });
 
+    const url_map = "https://www.openstreetmap.org/?mlat=" + latitude + "&mlon=" + longitude + "&zoom=20"; // URL dengan koordinat sesuai parameter
+
     // Simpan informasi ke database lokasi
     const post_lokasi = await prisma.lokasi_clock_out.create({
       data: {
@@ -261,6 +267,8 @@ app.post('/clock_out', upload.single('image'), async (req, res) => {
         date: now, // Waktu dalam UTC
         latitude: parseFloat(latitude),
         longitude: parseFloat(longitude),
+        alamat: alamat,
+        url_map : url_map,
       },
     });
 
@@ -279,7 +287,7 @@ app.post('/clock_out', upload.single('image'), async (req, res) => {
 
 app.post('/luar_kota', upload.single('image'), async (req, res) => {
   try {
-    const { gpm_id, latitude, longitude } = req.body;
+    const { gpm_id, latitude, longitude, alamat } = req.body;
     console.log('Latitude diterima:', latitude);
     const file = req.file;
     console.log('File diterima:', file);
@@ -287,7 +295,7 @@ app.post('/luar_kota', upload.single('image'), async (req, res) => {
     if (!file) {
       return res.status(400).send({ message: 'File tidak ditemukan!' });
     }
-    // Periksa apakah semua data yang dibutuhkan ada dan valid
+    // Periksa apakah semua data yang dibutuhkan ada dan valid , validasi ini blm berhasil sehingga diganti validasi data pada sisi client
     if (!gpm_id || !latitude || !longitude || latitude.trim() === "" || longitude.trim() === "") {
       return res.status(400).send({
         message: 'Data tidak lengkap! Pastikan gpm_id, latitude, dan longitude dikirim dengan benar.'
@@ -343,6 +351,8 @@ app.post('/luar_kota', upload.single('image'), async (req, res) => {
       },
     });
 
+    const url_map = "https://www.openstreetmap.org/?mlat=" + latitude + "&mlon=" + longitude + "&zoom=20"; // URL dengan koordinat sesuai parameter
+
     // Simpan informasi ke database lokasi
     const post_lokasi = await prisma.lokasi_luar_kota.create({
       data: {
@@ -350,6 +360,8 @@ app.post('/luar_kota', upload.single('image'), async (req, res) => {
         date: now, // Waktu dalam UTC
         latitude: parseFloat(latitude),
         longitude: parseFloat(longitude),
+        alamat: alamat,
+        url_map: url_map,
       },
     });
 
